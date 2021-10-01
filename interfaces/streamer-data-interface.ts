@@ -1,6 +1,6 @@
 export interface StreamerData
 {
   name: string,
-  channel: number,
+  channel: number|string,
   announced: boolean
 }

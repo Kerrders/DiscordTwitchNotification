@@ -1,6 +1,6 @@
 import { StreamerData } from "./interfaces/streamer-data-interface";
 import { TwitchCredentials } from "./interfaces/twitch-credentials-interface";
-import { Client, Intents, TextChannel } from 'discord.js';
+import { Channel, Client, Intents, TextChannel } from 'discord.js';
 import axios from 'axios';
 import * as dotenv from "dotenv";
 import jsoning = require("jsoning");
@@ -66,13 +66,13 @@ async function checkStreamers(): Promise<void>
     await refreshToken();
   }
   client.guilds.cache.forEach(async(guild) => {
-    const streamers: Array<StreamerData> = await getStreamersbyServer(parseInt(guild.id));
+    const streamers: Array<StreamerData> = await getStreamersbyServer(guild.id);
     for(const streamer of streamers) {
       const index = streamers.indexOf(streamer);
       if (await isStreamerOnline(streamer.name)) {
-        const channel = client.channels.cache.find(channel => parseInt(channel.id) == streamer.channel)
+        const channel = await client.channels.cache.find(channel => channel.id == streamer.channel && channel.isText())
         if (!channel || streamers[index].announced) return;
-        (channel as TextChannel).send(`@here https://twitch.tv/${streamer.name}`);
+        await (channel as TextChannel).send(`@here https://twitch.tv/${streamer.name}`);
         streamers[index].announced = true;
       } else {
         streamers[index].announced = false;
@@ -87,7 +87,7 @@ async function checkStreamers(): Promise<void>
  *
  * @returns {Array<StreamerData>}
  */
-async function getStreamersbyServer(serverId: number): Promise<Array<StreamerData>>
+async function getStreamersbyServer(serverId: number|string): Promise<Array<StreamerData>>
 {
   if(await db.has(`${serverId}_streamers`)){
     return await db.get(`${serverId}_streamers`);
@@ -118,21 +118,24 @@ client.on("messageCreate", async(message) => {
   if((command !== 'streameradd' && command !== 'streamerremove' && command !== 'streamerlist') || !args.length && command !== 'streamerlist') {
     return;
   }
-  const streamers: Array<StreamerData> = await getStreamersbyServer(parseInt(message.guild.id));
+  const streamers: Array<StreamerData> = await getStreamersbyServer(message.guild.id);
+  console.log(streamers);
   const streamerName = args.length ? args[0] : '';
   const streamerFound = streamers.find(streamer => streamer.name == streamerName);
   switch (command) {
     case 'streameradd':
       {
+        console.log(streamerFound);
         if(streamerFound !== undefined) {
           await message.channel.send(`${streamerName} ist bereits in der Liste`);
           return;
         }
-        db.push(`${message.guild.id}_streamers`, JSON.stringify({
+        // @ts-ignore
+        await db.push(`${message.guild.id}_streamers`, {
           name: streamerName,
-          channel: parseInt(message.channel.id),
+          channel: message.channel.id,
           announced: false
-        }));
+        });
         await message.channel.send(`${streamerName} wurde erfolgreich zur Liste hinzugefügt`);
         break;
       }
@@ -143,7 +146,7 @@ client.on("messageCreate", async(message) => {
             await message.channel.send(`${streamerName} existiert nicht in der Liste`);
             return;
           }
-          db.set(`${message.guild.id}_streamers`, streamers.filter(obj => obj !== streamerFound));
+          await db.set(`${message.guild.id}_streamers`, streamers.filter(obj => obj !== streamerFound));
           await message.channel.send(`${streamerName} wurde erfolgreich von der Liste entfernt`);
           break;
         }
