@@ -1,6 +1,6 @@
 import { StreamerData } from "./interfaces/streamer-data-interface";
 import { TwitchCredentials } from "./interfaces/twitch-credentials-interface";
-import { Client, Intents } from 'discord.js';
+import { Client, Intents, TextChannel } from 'discord.js';
 import axios from 'axios';
 import * as dotenv from "dotenv";
 import jsoning = require("jsoning");
@@ -72,7 +72,7 @@ async function checkStreamers(): Promise<void>
       if (await isStreamerOnline(streamer.name)) {
         const channel = client.channels.cache.find(channel => parseInt(channel.id) == streamer.channel)
         if (!channel || streamers[index].announced) return;
-        channel.send(`@here https://twitch.tv/${streamer.name}`);
+        (channel as TextChannel).send(`@here https://twitch.tv/${streamer.name}`);
         streamers[index].announced = true;
       } else {
         streamers[index].announced = false;
@@ -96,6 +96,13 @@ async function getStreamersbyServer(serverId: number): Promise<Array<StreamerDat
 }
 
 client.once('ready', async() => {
+  client.user.setPresence({
+    status: 'online',
+    activities: [{
+        name: 'KeRR#0001',
+        type: 'WATCHING'
+    }]
+  })
   setInterval(()=> { checkStreamers() }, 60000 * 5);
   checkStreamers();
 });
