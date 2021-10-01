@@ -82,6 +82,11 @@ async function checkStreamers(): Promise<void>
   });
 }
 
+/**
+ * Get streamers by server id
+ *
+ * @returns {Array<StreamerData>}
+ */
 async function getStreamersbyServer(serverId: number): Promise<Array<StreamerData>>
 {
   if(await db.has(`${serverId}_streamers`)){
