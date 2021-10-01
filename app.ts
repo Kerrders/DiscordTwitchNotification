@@ -1,15 +1,16 @@
 import { StreamerData } from "./interfaces/streamer-data-interface";
 import { TwitchCredentials } from "./interfaces/twitch-credentials-interface";
+import { Client, Intents } from 'discord.js';
+import axios from 'axios';
+import * as dotenv from "dotenv";
+import jsoning = require("jsoning");
 
-require('dotenv').config();
-const { Client, Intents, TextChannel } = require('discord.js');
-const axios = require('axios');
-const client: any = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES ,Intents.FLAGS.DIRECT_MESSAGES] });
+const client: Client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES ,Intents.FLAGS.DIRECT_MESSAGES] });
 const prefix = '!';
-let jsoning = require("jsoning");
-let db = new jsoning("database.json");
+const db = new jsoning("database.json");
 let accessToken: string;
 let tokenExpiredAt: number;
+dotenv.config();
 
 const data: TwitchCredentials = {
   client_id: process.env.TWITCH_CLIENT_ID,
@@ -45,11 +46,11 @@ async function isStreamerOnline(user: string): Promise<boolean>
  */
  async function refreshToken(): Promise<void>
  {
-  await axios.post('https://id.twitch.tv/oauth2/token', data).then(function (response: any) {
+  await axios.post('https://id.twitch.tv/oauth2/token', data).then(function (response) {
     accessToken = response.data.access_token;
     tokenExpiredAt = Date.now() + response.data.expires_in;
   })
-  .catch(function (error: void) {
+  .catch(function () {
     console.log('Fehler beim Laden des Tokens');
   });
  }
@@ -65,12 +66,11 @@ async function checkStreamers(): Promise<void>
     await refreshToken();
   }
   client.guilds.cache.forEach(async(guild) => {
-    let streamers: Array<StreamerData> = await getStreamersbyServer(guild.id);
-    console.log(streamers);
+    const streamers: Array<StreamerData> = await getStreamersbyServer(parseInt(guild.id));
     for(const streamer of streamers) {
       const index = streamers.indexOf(streamer);
       if (await isStreamerOnline(streamer.name)) {
-        const channel = client.channels.cache.find(channel => channel.id == streamer.channel)
+        const channel = client.channels.cache.find(channel => parseInt(channel.id) == streamer.channel)
         if (!channel || streamers[index].announced) return;
         channel.send(`@here https://twitch.tv/${streamer.name}`);
         streamers[index].announced = true;
@@ -111,7 +111,7 @@ client.on("messageCreate", async(message) => {
   if((command !== 'streameradd' && command !== 'streamerremove' && command !== 'streamerlist') || !args.length && command !== 'streamerlist') {
     return;
   }
-  const streamers: Array<StreamerData> = await getStreamersbyServer(message.guild.id);
+  const streamers: Array<StreamerData> = await getStreamersbyServer(parseInt(message.guild.id));
   const streamerName = args.length ? args[0] : '';
   const streamerFound = streamers.find(streamer => streamer.name == streamerName);
   switch (command) {
@@ -121,11 +121,11 @@ client.on("messageCreate", async(message) => {
           await message.channel.send(`${streamerName} ist bereits in der Liste`);
           return;
         }
-        await db.push(`${message.guild.id}_streamers`, {
+        db.push(`${message.guild.id}_streamers`, JSON.stringify({
           name: streamerName,
-          channel: message.channel.id,
+          channel: parseInt(message.channel.id),
           announced: false
-        });
+        }));
         await message.channel.send(`${streamerName} wurde erfolgreich zur Liste hinzugefügt`);
         break;
       }
@@ -136,7 +136,7 @@ client.on("messageCreate", async(message) => {
             await message.channel.send(`${streamerName} existiert nicht in der Liste`);
             return;
           }
-          await db.set(`${message.guild.id}_streamers`, streamers.filter(obj => obj !== streamerFound));
+          db.set(`${message.guild.id}_streamers`, streamers.filter(obj => obj !== streamerFound));
           await message.channel.send(`${streamerName} wurde erfolgreich von der Liste entfernt`);
           break;
         }
@@ -147,6 +147,7 @@ client.on("messageCreate", async(message) => {
             return streamer.name;
           }).join(",");
           await message.channel.send(`Benachrichtigungen für folgende Streamer aktiviert: ${streamerNames}`);
+          break;
         }
     default:
       break;
