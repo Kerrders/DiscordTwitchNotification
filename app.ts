@@ -91,9 +91,8 @@ async function getStreamersbyServer(serverId: number): Promise<Array<StreamerDat
 }
 
 client.once('ready', async() => {
-  console.log('test1');
+  setInterval(()=> { checkStreamers() }, 60000 * 5);
   checkStreamers();
-  //setInterval(()=> { checkStreamers() }, 10000);
 });
 
 client.on("messageCreate", async(message) => {
