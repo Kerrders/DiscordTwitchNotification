@@ -72,7 +72,7 @@ async function checkStreamers(): Promise<void>
       if (await isStreamerOnline(streamer.name)) {
         const channel = client.channels.cache.find(channel => channel.id == streamer.channel)
         if (!channel || streamers[index].announced) return;
-        channel.send(`https://twitch.tv/${streamer.name}`);
+        channel.send(`@here https://twitch.tv/${streamer.name}`);
         streamers[index].announced = true;
       } else {
         streamers[index].announced = false;
@@ -98,6 +98,7 @@ client.once('ready', async() => {
 client.on("messageCreate", async(message) => {
   if (message.author.bot) return;
   if (message.content.indexOf(prefix) !== 0) return;
+  if (!message.member.permissions.has('ADMINISTRATOR')) return;
 
   const args = message.content.slice(prefix.length).trim().split(/ +/g);
   const command = args.shift().toLowerCase();
@@ -106,7 +107,7 @@ client.on("messageCreate", async(message) => {
     return;
   }
   const streamers: Array<StreamerData> = await getStreamersbyServer(message.guild.id);
-  const streamerName = args[0] ?? '';
+  const streamerName = args.length ? args[0] : '';
   const streamerFound = streamers.find(streamer => streamer.name == streamerName);
   switch (command) {
     case 'streameradd':
