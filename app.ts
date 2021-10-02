@@ -56,7 +56,7 @@ async function isStreamerOnline(user: string): Promise<boolean>
  }
 
 /**
- * Check and streamers
+ * Check the availability of every streamer
  *
  * @returns {void}
  */
@@ -119,13 +119,11 @@ client.on("messageCreate", async(message) => {
     return;
   }
   const streamers: Array<StreamerData> = await getStreamersbyServer(message.guild.id);
-  console.log(streamers);
   const streamerName = args.length ? args[0] : '';
   const streamerFound = streamers.find(streamer => streamer.name == streamerName);
   switch (command) {
     case 'streameradd':
       {
-        console.log(streamerFound);
         if(streamerFound !== undefined) {
           await message.channel.send(`${streamerName} ist bereits in der Liste`);
           return;
