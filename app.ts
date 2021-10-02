@@ -130,7 +130,6 @@ client.on("messageCreate", async(message) => {
           await message.channel.send(`${streamerName} ist bereits in der Liste`);
           return;
         }
-        // @ts-ignore
         await db.push(`${message.guild.id}_streamers`, {
           name: streamerName,
           channel: message.channel.id,
