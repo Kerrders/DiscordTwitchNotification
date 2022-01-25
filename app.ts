@@ -70,8 +70,13 @@ async function checkStreamers(): Promise<void>
     for(const streamer of streamers) {
       const index = streamers.indexOf(streamer);
       if (await isStreamerOnline(streamer.name)) {
-        const channel = await client.channels.cache.find(channel => channel.id == streamer.channel && channel.isText())
-        if (!channel || streamers[index].announced) return;
+        const channel = await client.channels.cache.find(channel => channel.id == streamer.channel && channel.isText());
+        if (!channel || streamers[index].announced) continue;
+        const lastMessage = (channel as TextChannel).lastMessage;
+        if(lastMessage.content.search(`https://twitch.tv/${streamer.name}`) !== -1 && (Date.now() - lastMessage.createdTimestamp) < 60*60*1){
+          streamers[index].announced = true;
+          continue;
+        }
         await (channel as TextChannel).send(`@here https://twitch.tv/${streamer.name}`);
         streamers[index].announced = true;
       } else {
