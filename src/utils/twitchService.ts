@@ -1,11 +1,11 @@
 import { Client, TextChannel } from 'discord.js';
-import { StreamerData } from '../interfaces/streamer-data.interface';
-import { TwitchCredentials } from '../interfaces/twitch-credentials.interface';
+import { StreamerData } from '../interfaces/streamerData.interface';
+import { TwitchCredentials } from '../interfaces/twitchCredentials.interface';
 import { CONFIG } from '../config';
 import { DatabaseService } from './databaseService';
 import axios from 'axios';
 
-let tokenExpiredAt: number = 0;
+let tokenExpiredAt: number;
 let accessToken: string;
 
 const data: TwitchCredentials = {
@@ -15,9 +15,9 @@ const data: TwitchCredentials = {
 };
 
 export class TwitchService {
-  private client;
+  private client: Client;
 
-  constructor(client) {
+  constructor(client: Client) {
     this.client = client;
   }
 

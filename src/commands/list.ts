@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { StreamerData } from '../interfaces/streamer-data.interface';
+import { StreamerData } from '../interfaces/streamerData.interface';
 import { DatabaseService } from '../utils/databaseService';
 
 module.exports = {

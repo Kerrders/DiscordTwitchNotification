@@ -1,5 +1,5 @@
 import jsoning = require('jsoning');
-import { StreamerData } from '../interfaces/streamer-data.interface';
+import { StreamerData } from '../interfaces/streamerData.interface';
 
 const db = new jsoning('database.json');
 
