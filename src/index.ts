@@ -1,6 +1,6 @@
 import { StreamerData } from "./interfaces/streamer-data-interface";
 import { TwitchCredentials } from "./interfaces/twitch-credentials-interface";
-import { Channel, Client, Intents, TextChannel } from 'discord.js';
+import { Client, Intents, TextChannel } from 'discord.js';
 import axios from 'axios';
 import * as dotenv from "dotenv";
 import jsoning = require("jsoning");
