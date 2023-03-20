@@ -1,11 +1,25 @@
-import { Client, Events, GatewayIntentBits, REST } from 'discord.js';
-import { CONFIG } from './config';
+import { ActivityType, Client, Events, GatewayIntentBits, REST } from 'discord.js';
 import { commandExecudes, registerCommands } from "./utils/commandHandler";
+import { CONFIG } from './config';
+import { TwitchService } from './utils/twitchService';
 
 const client: Client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.DirectMessages] });
 const rest = new REST({ version: '10' }).setToken(CONFIG.DISCORD_TOKEN);
 
 registerCommands(rest);
+
+client.once(Events.ClientReady, async() => {
+    client.user.setPresence({
+      status: 'online',
+      activities: [{
+          name: 'KeRR#0001',
+          type: ActivityType.Watching
+      }]
+    });
+    const twitchService = new TwitchService(client);
+    setInterval(()=> { twitchService.checkStreamers() }, 60000 * 5);
+    twitchService.checkStreamers();
+  });
 
 client.on(Events.InteractionCreate, async interaction => {
 	if (!interaction.isChatInputCommand()) return;
