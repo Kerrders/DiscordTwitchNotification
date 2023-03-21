@@ -21,15 +21,6 @@ const rest = new REST({ version: '10' }).setToken(CONFIG.DISCORD_TOKEN);
 registerCommands(rest);
 
 client.once(Events.ClientReady, async () => {
-  client.user.setPresence({
-    status: 'online',
-    activities: [
-      {
-        name: 'KeRR#0001',
-        type: ActivityType.Watching,
-      },
-    ],
-  });
   const twitchService = new TwitchService(client);
   setInterval(() => {
     twitchService.checkStreamers();

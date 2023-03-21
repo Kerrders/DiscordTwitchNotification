@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { DatabaseService } from '../utils/databaseService';
 
 module.exports = {
@@ -11,18 +11,21 @@ module.exports = {
         .setDescription('Input the streamers username')
         .setRequired(true)
     ),
-  async execute(interaction) {
-    const streamerName = interaction.options.get('streamer').value;
+  async execute(interaction: ChatInputCommandInteraction) {
+    const streamerName = interaction.options.get('streamer')?.value;
     if (
-      await DatabaseService.removeStreamer(streamerName, interaction.guild.id)
+      await DatabaseService.removeStreamer(
+        streamerName.toString(),
+        interaction.guild.id
+      )
     ) {
       await interaction.reply(
-        `${streamerName} wurde erfolgreich von der Liste entfernt`
+        `${streamerName} was successfully removed from the list`
       );
-    } else {
-      await interaction.reply(
-        `${streamerName} existiert nicht in der Liste oder konnte nicht entfernt werden`
-      );
+      return;
     }
+    await interaction.reply(
+      `${streamerName} does not exist in the list or could not be removed`
+    );
   },
 };
