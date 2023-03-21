@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { DatabaseService } from '../utils/databaseService';
 
 module.exports = {
@@ -11,29 +11,26 @@ module.exports = {
         .setDescription('Input the streamers username')
         .setRequired(true)
     ),
-  async execute(interaction) {
-    const streamerName = interaction.options.get('streamer').value;
-    const streamerFound = (
+  async execute(interaction: ChatInputCommandInteraction) {
+    const streamerName = interaction.options.getString('streamer');
+    const streamerExists = (
       await DatabaseService.getStreamersbyServer(interaction.guild.id)
-    ).find((streamer) => streamer.name == streamerName);
-    if (streamerFound !== undefined) {
-      await interaction.reply(`${streamerName} ist bereits in der Liste`);
+    )?.find((streamer) => streamer.name === streamerName);
+    if (streamerExists) {
+      await interaction.reply(`${streamerName} is already in the list.`);
       return;
     }
-    if (
-      await DatabaseService.addStreamer(
-        streamerName,
-        interaction.guild.id,
-        interaction.channel.id
-      )
-    ) {
+    const addedSuccessfully = await DatabaseService.addStreamer(
+      streamerName,
+      interaction.guild.id,
+      interaction.channel.id
+    );
+    if (addedSuccessfully) {
       await interaction.reply(
-        `${streamerName} wurde erfolgreich zur Liste hinzugefügt`
+        `${streamerName} was successfully added to the list.`
       );
     } else {
-      await interaction.reply(
-        `${streamerName} konnte nicht zur Liste hingezugefügt werden`
-      );
+      await interaction.reply(`Failed to add ${streamerName} to the list.`);
     }
   },
 };

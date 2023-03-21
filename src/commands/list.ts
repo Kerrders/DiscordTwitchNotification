@@ -1,4 +1,8 @@
-import { SlashCommandBuilder } from 'discord.js';
+import {
+  ChatInputCommandInteraction,
+  SlashCommandBuilder,
+  EmbedBuilder,
+} from 'discord.js';
 import { StreamerData } from '../interfaces/streamerData.interface';
 import { DatabaseService } from '../utils/databaseService';
 
@@ -6,20 +10,23 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('list')
     .setDescription('Get current streamer list'),
-  async execute(interaction) {
-    const streamerNames = await (
-      await DatabaseService.getStreamersbyServer(interaction.guild.id)
-    )
-      .map(function (streamer: StreamerData) {
-        return streamer.name;
-      })
-      .join(',');
-    if (!streamerNames.length) {
-      await interaction.reply(`Die Streamerliste ist noch leer`);
+  async execute(interaction: ChatInputCommandInteraction) {
+    const streamers = await DatabaseService.getStreamersbyServer(
+      interaction.guild.id
+    );
+    if (!streamers.length) {
+      await interaction.reply('The streamer list is still empty');
       return;
     }
-    await interaction.reply(
-      `Benachrichtigungen für folgende Streamer aktiviert: ${streamerNames}`
+    const streamerNames = streamers.map(
+      (streamer: StreamerData) => streamer.name
     );
+    const embed = new EmbedBuilder()
+      .setTitle('Notification List')
+      .setDescription(streamerNames.join('\n'))
+      .setColor('#00FF00')
+      .setTimestamp();
+
+    await interaction.reply({ embeds: [embed] });
   },
 };

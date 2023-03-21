@@ -70,35 +70,60 @@ export class TwitchService {
     if (Date.now() >= tokenExpiredAt || tokenExpiredAt === undefined) {
       await this.refreshToken();
     }
-    this.client.guilds.cache.forEach(async (guild) => {
-      const streamers: Array<StreamerData> =
-        await DatabaseService.getStreamersbyServer(guild.id);
-      for (const streamer of streamers) {
-        const index = streamers.indexOf(streamer);
-        if (await this.isStreamerOnline(streamer.name)) {
-          const channel = await this.client.channels.cache.find(
-            (channel) => channel.id == streamer.channel
-          );
-          if (!channel || streamers[index].announced) continue;
-          const lastMessage = (channel as TextChannel).lastMessage;
-          if (
-            lastMessage &&
-            lastMessage.content.search(`https://twitch.tv/${streamer.name}`) !==
-              -1 &&
-            Date.now() - lastMessage.createdTimestamp < 60 * 60 * 1
-          ) {
-            streamers[index].announced = true;
+
+    const guilds = Array.from(this.client.guilds.cache.values());
+
+    await Promise.all(
+      guilds.map(async (guild) => {
+        const streamers = await DatabaseService.getStreamersbyServer(guild.id);
+        const announcedStreamers = new Set(
+          streamers
+            .filter((streamer) => streamer.announced)
+            .map((streamer) => streamer.name)
+        );
+
+        for (const streamer of streamers) {
+          if (announcedStreamers.has(streamer.name)) {
             continue;
           }
-          await (channel as TextChannel).send(
-            `@here https://twitch.tv/${streamer.name}`
-          );
-          streamers[index].announced = true;
-        } else {
-          streamers[index].announced = false;
+
+          const channel = this.client.channels.cache.get(
+            streamer.channel.toString()
+          ) as TextChannel;
+
+          if (!channel) {
+            continue;
+          }
+
+          const lastMessage = await channel.lastMessage;
+          const streamerOnline = await this.isStreamerOnline(streamer.name);
+
+          if (streamerOnline) {
+            if (
+              lastMessage &&
+              lastMessage.content.includes(
+                `https://twitch.tv/${streamer.name}`
+              ) &&
+              Date.now() - lastMessage.createdTimestamp < 60 * 60 * 1
+            ) {
+              announcedStreamers.add(streamer.name);
+              continue;
+            }
+
+            await channel.send(`@here https://twitch.tv/${streamer.name}`);
+            announcedStreamers.add(streamer.name);
+          } else {
+            announcedStreamers.delete(streamer.name);
+          }
         }
-      }
-      await DatabaseService.updateList(streamers, guild.id);
-    });
+
+        const updatedStreamers = streamers.map((streamer) => ({
+          ...streamer,
+          announced: announcedStreamers.has(streamer.name),
+        }));
+
+        await DatabaseService.updateList(updatedStreamers, guild.id);
+      })
+    );
   }
 }
