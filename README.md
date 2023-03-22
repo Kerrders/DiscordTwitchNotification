@@ -1,4 +1,4 @@
-# DiscordTwitchNotification
+# Discord Twitch notification bot
 
 Simple discord bot for twitch live notifications
 
